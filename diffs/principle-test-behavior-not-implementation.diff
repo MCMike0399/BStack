@@ -1,0 +1,11 @@
+--- upstream/principle-test-behavior-not-implementation
++++ draft/principle-test-behavior-not-implementation
+@@ -3,6 +3,8 @@
+ description: "Apply when you write, change, or keep a test. Assert what the code's users can observe, so that the test fails when that behavior breaks and keeps passing when only the internals change."
+ disable-model-invocation: true
+ ---
++
++> REVIEW DRAFT ONLY. Not installed or approved as BStack policy. Project instructions and approval gates still apply. Any delegation is deferred.
+ 
+ # Test Behavior, Not Implementation
+ 

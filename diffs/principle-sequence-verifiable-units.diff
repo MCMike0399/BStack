@@ -1,0 +1,11 @@
+--- upstream/principle-sequence-verifiable-units
++++ draft/principle-sequence-verifiable-units
+@@ -3,6 +3,8 @@
+ description: "Apply to multi-step work (sweeps, migrations, runs of similar edits) and to how you stack commits and PRs. Break work into small units that each end in a verifiable state, check each before the next, and order delivery so the sequence proves itself to a reviewer."
+ disable-model-invocation: true
+ ---
++
++> REVIEW DRAFT ONLY. Not installed or approved as BStack policy. Project instructions and approval gates still apply. Any delegation is deferred.
+ 
+ # Sequence work into verifiable units
+ 

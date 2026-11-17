@@ -1,0 +1,11 @@
+--- upstream/principle-laziness-protocol
++++ draft/principle-laziness-protocol
+@@ -4,6 +4,8 @@
+ disable-model-invocation: true
+ ---
+ 
++> REVIEW DRAFT ONLY. Not installed or approved as BStack policy. Project instructions and approval gates still apply. Any delegation is deferred.
++
+ # Laziness Protocol
+ 
+ - **Consolidate decisions.** Do not repeat the same choice in several places. Put it behind one source of truth and pass the result as a simple flag.

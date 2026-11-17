@@ -1,0 +1,14 @@
+--- upstream/architect
++++ draft/architect
+@@ -4,8 +4,10 @@
+ disable-model-invocation: true
+ ---
+ 
++> REVIEW DRAFT ONLY. Not installed or approved as BStack policy. Project instructions and approval gates still apply. Any delegation is deferred.
++
+ # Architect
+ 
+ Before writing code, trace every system the change touches, then sketch two different shapes for it (types, signatures, module boundaries) and pick the one where each piece of state has one owner, each task has one way to do it, and callers need to know least. Redesign instead of patching if workarounds repeat.
+ 
+-For a large or contested design, run the **arena** skill instead of sketching alone.
++> Deferred: the upstream arena escalation requires subagent design. Do not invoke it in this draft.

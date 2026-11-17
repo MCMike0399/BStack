@@ -1,0 +1,11 @@
+--- upstream/principle-subtract-before-you-add
++++ draft/principle-subtract-before-you-add
+@@ -3,6 +3,8 @@
+ description: "Apply when sequencing an addition, refactor, or rewrite. Remove dead code, redundant validators, and stub references first, then build on the simpler base."
+ disable-model-invocation: true
+ ---
++
++> REVIEW DRAFT ONLY. Not installed or approved as BStack policy. Project instructions and approval gates still apply. Any delegation is deferred.
+ 
+ # Subtract Before You Add
+ 

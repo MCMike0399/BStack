@@ -1,0 +1,11 @@
+--- upstream/unslop
++++ draft/unslop
+@@ -3,6 +3,8 @@
+ description: Cut AI tells from any writing.
+ disable-model-invocation: true
+ ---
++
++> REVIEW DRAFT ONLY. Not installed or approved as BStack policy. Project instructions and approval gates still apply. Any delegation is deferred.
+ 
+ # Unslop
+ 

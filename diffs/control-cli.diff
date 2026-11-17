@@ -1,0 +1,13 @@
+--- upstream/control-cli
++++ draft/control-cli
+@@ -1,7 +1,10 @@
+ ---
+ name: control-cli
+ description: Build or adapt a local harness to drive, inspect, and profile an interactive CLI or TUI without external services. Use for CLI UX checks, startup regressions, memory leaks, hangs, prompt flows, or terminal demos.
++disable-model-invocation: true
+ ---
++
++> REVIEW DRAFT ONLY. Not installed or approved as BStack policy. Project instructions and approval gates still apply. Any delegation is deferred.
+ 
+ # Control CLI
+ 
