@@ -2,8 +2,8 @@
 
 ## Skill draft — not installed
 
-1. When invoked, choose the smallest safe scope and decide what observable result would show the work succeeded. Before calling it done, check that result and say what remains unverified.
-2. Before changing stateful logic, identify where the state lives, who can change it, and which rules must still hold after the change. If the states are only implied by flags, status values, or scattered conditionals, name them and the allowed transitions first. Restructure only when the task calls for it.
+1. Before acting, choose the smallest scope that meets the goal and decide what observable result would show it worked. Before calling the work done, check that result and say what remains unverified.
+2. Before changing stateful logic, identify where the state lives, what can change it, and what must stay true afterward. If states are only implied by flags or scattered conditionals, name the states and the allowed transitions first. Restructure only when the task calls for it.
 
 ## Review notes — not part of the skill
 
