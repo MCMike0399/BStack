@@ -1,6 +1,10 @@
-# Burbi-mode for Rakazo
+---
+name: burbi-mode
+description: Apply BStack’s engineering rules to a coding task when explicitly invoked.
+disable-model-invocation: true
+---
 
-## Skill draft — not installed
+# Burbi-mode
 
 1. Before acting, choose the smallest scope that meets the goal and decide what observable result would show it worked. Before calling the work done, check that result and say what remains unverified.
 2. Before changing stateful logic, identify where the state lives, what can change it, and what must stay true afterward. If states are only implied by flags or scattered conditionals, name the states and the allowed transitions first. Restructure only when the task calls for it.
