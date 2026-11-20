@@ -14,7 +14,7 @@ Route by what the user wants done now. For a routed task, the first tool action 
 | --- | --- |
 | Explain existing behavior or diagnose a correctness failure | [Investigation](playbooks/investigation.md) |
 | Fix incorrect behavior now | [Bug fix](playbooks/bug-fix.md) |
-| Plan, add, or intentionally change behavior | [Feature](playbooks/feature.md) |
+| Plan, add, or intentionally change behavior, or write or update a verification recipe in the repo | [Feature](playbooks/feature.md) |
 | Change code structure while preserving behavior | [Refactor](playbooks/refactor.md) |
 | Plan a transition, build a converter for existing state, or carry out a migration | [Migration](playbooks/migration.md) |
 | Measure, diagnose, or improve speed or resource use | [Performance](playbooks/performance.md) |
@@ -31,6 +31,10 @@ For work outside these routes, use the engineering rules alone. Keep the playboo
 ## Find project context
 
 Read the applicable project instructions or use the ones already loaded. If they contain a routing table, match the affected area and read the files or sections named in that entry. Expand to another topic only when evidence from the selected docs or code shows that it is involved. Where project guidance is absent, find the entry point and checks in the nearest code and configuration. Verify claims about current behavior against the code or an observation within the task's authorization.
+
+## Verify the behavior
+
+After the selected playbook, open [Project verification](references/project-verification.md) when choosing a check that needs a running app, device, or external dependency the usual checks do not exercise, when a needed check is blocked, or when asked to plan, write, or update a verification recipe. Open it before choosing release checks for work that includes publication or deployment, including a push that triggers either.
 
 ## Resolve a shared design decision
 
