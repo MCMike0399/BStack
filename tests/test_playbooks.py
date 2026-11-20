@@ -45,8 +45,9 @@ class PlaybookFilesTest(unittest.TestCase):
         # one playbook plus the references whose condition applies. These caps are
         # ratchets, not measured thresholds: raise one only when the added text is
         # worth its cost on every task that loads the file. docs/rule-loading-research.md
-        # measured the entry file's cost; docs/pstack-adoption.md records the caps.
-        self.assertLessEqual(len(SKILL.read_bytes()), 19_000)
+        # measured the entry file's cost; docs/pstack-adoption.md and
+        # docs/workflow-organization.md record the caps.
+        self.assertLessEqual(len(SKILL.read_bytes()), 17_100)
         for folder, cap in (("playbooks", 3_500), ("references", 4_500), ("roles", 1_500)):
             for path in (SKILL.parent / folder).glob("*.md"):
                 with self.subTest(path=path.name):

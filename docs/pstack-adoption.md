@@ -68,4 +68,4 @@ The owner's aim is engineer-grade output on everyday work with any model, so Bur
   - Also: staging now needs authorization, and nine live-test weaknesses were fixed.
 - **Round 7 (final).** One blocking issue: the failing-test sentence keyed on a test's state, not the request. Also a test helper that counted `2>&1` as a write. Both fixed, and live cases added for a failing check and for asking why it fails.
 
-`SKILL.md` is 18,788 bytes. The cap is now 19,000, a ratchet rather than a measured threshold. Playbooks are capped at 3,500 bytes, references at 4,500, and roles at 1,500.
+`SKILL.md` was 18,788 bytes, with a cap of 19,000, a ratchet rather than a measured threshold. On 2026-11-20 the router prose moved into table rows and references and the cap dropped to 17,100 ([Router prose moved to rows and references](workflow-organization.md#router-prose-moved-to-rows-and-references)). Playbooks are capped at 3,500 bytes, references at 4,500, and roles at 1,500.
