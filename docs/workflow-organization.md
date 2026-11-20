@@ -1,0 +1,37 @@
+# Organizing Burbi-mode playbooks and design methods
+
+## Patterns from existing projects
+
+- PStack’s Refactoring playbook pins observable behavior, calls Architect for a change to a function boundary, delegates scoped edits, and verifies the result. Architect compares shapes using state ownership and caller burden. The parent owns the outcome across those steps. This supports one shared design method called where it helps several playbooks. [PStack Refactoring](https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/refactoring.md) · [PStack Architect](https://github.com/cursor/plugins/blob/main/pstack/skills/architect/SKILL.md)
+- Agent Skills defines an entry file and on-demand reference files. Pi documents relative links within a skill and explicit activation via `/skill:name`. A focused method file under the existing skill fits the current Pi quick start. A sibling skill needs its own registration. [Agent Skills specification](https://agentskills.io/specification#progressive-disclosure) · [Pi skills](https://docs.pi.dev/latest/skills#understand-how-skills-load) · [BStack quick start](../README.md#try-burbi-mode-in-pi)
+- Superpowers separates the plan from execution and supplies fresh implementers with scoped task briefs. Reviewers receive the exact diff and relevant constraints. BStack can borrow those handoffs while keeping review frequency governed by the task. Anthropic documents the same context benefit when delegates return distilled results to the coordinating session. [Superpowers planning](https://github.com/obra/superpowers/blob/main/skills/writing-plans/SKILL.md) · [Superpowers delegation](https://github.com/obra/superpowers/blob/main/skills/subagent-driven-development/SKILL.md) · [Anthropic context engineering](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents)
+- Spec Kit gives feature development, bug fixing, and idea assessment their own entry points. Assessment can end with a decision artifact and hand off later when implementation is requested. BStack can use that stopping point without adopting Spec Kit’s commands or templates. [Spec Kit process selection](https://github.com/github/spec-kit#choose-your-process) · [Spec Kit idea assessment](https://github.com/github/spec-kit#idea-assessment)
+
+## Two layouts for BStack
+
+**One skill with a parent-loaded reference.** Keep `skills/burbi-mode/SKILL.md` as the opt-in router and `playbooks/` as the source for each outcome’s sequence. Add `skills/burbi-mode/references/architecture.md` for a reusable design procedure. Put its trigger and direct link in the parent skill. Open the playbook first, then the reference when an unresolved shared interface or state ownership decision affects the work. The method returns the chosen or recommended shape, behavior to preserve, affected callers or owners, the tradeoff, and any check needed before dependent work. The selected playbook resumes after the decision when the task includes implementation. A design-only task uses the playbook for the underlying change and ends with the design and evidence.
+
+**An independently invocable sibling skill.** Give `skills/architecture/SKILL.md` its own metadata and Pi command. It owns the same method and the same design deliverable. The user can open it directly for a stand-alone design task, and Burbi-mode can point to its instructions when it is installed. This adds a second registration and a dependency between skills. It pays off when standalone invocation or reuse from another workflow recurs. Move the method to the sibling skill at that point so the procedures have one source. [Pi skill discovery and explicit commands](https://docs.pi.dev/latest/skills)
+
+## Walkthrough for the one-skill layout
+
+| Request | What the parent opens and returns |
+| --- | --- |
+| Clean up one file with the existing interface intact | Refactor, then relevant project context. Capture the affected behavior, make the scoped edit if requested, and compare the same behavior afterward. |
+| Choose a shared interface used by several callers | The playbook for the user’s outcome, then the architecture reference before dependent work. Compare viable shapes against the preserved behavior and record the chosen contract. Use Prototype when an observation can decide the tradeoff. |
+| Design a shared contract and stop before implementation | Open the Feature, Refactor, or Migration playbook for the underlying change, then the architecture reference. Return the recommended contract, evidence, and open decisions. |
+| Delegate implementation or independent review | The parent owns the playbook and sends the core, engineering rules, applicable role, and one brief. A Worker receives the selected playbook and the settled contract, starting snapshot, scope, and acceptance check. An Advisor receives the decision question or exact artifact, review criteria, and evidence. The parent inspects the result and verifies the integrated change. |
+
+Start with the one-skill layout. Keep the nine playbooks and two role files in their current locations. A workflow can share the architecture method without routing a one-file edit through it. Add the reference when adopting the architecture step, and use the sibling layout once direct invocation earns a separate entry point. Keep project seats and decisions in the project's guidance and retain the parent's authority over shared choices. [Current router](../skills/burbi-mode/SKILL.md) · [Worker role](../skills/burbi-mode/roles/worker.md) · [Advisor role](../skills/burbi-mode/roles/advisor.md)
+
+## Fable review and proposed checks
+
+Fable 5.2 at medium effort agreed with keeping one skill. It spotted a conflict in the first draft. Opening Architecture directly for a design-only request would bypass the current requirement to open the relevant playbook first. Keep plan-only work in the matching playbook, and use one narrow trigger for Architecture. `references/` fits the Agent Skills layout and keeps the method reachable from the entry file.
+
+Architecture compares choices using known requirements and evidence. Prototype earns its step when the user asks for a prototype or when an observation from exercising a candidate could change the decision. The parent owns routing and selects what to send. Implementation Workers receive settled constraints. A Worker assigned to draft a design can receive the relevant method. An evidence-only Advisor receives the actual artifact and applicable criteria in its brief.
+
+When adopting the reference, check fresh Pi sessions for a small refactor, a shared-interface change, a design-only request, a staged migration, and a request to exercise a prototype. Verify the first playbook read, whether Architecture opened, and the absence of project edits for a no-edit request. Check that the link resolves from the installed skill location and that a delegate can act on its brief without the parent’s transcript.
+
+## Adopted layout
+
+BStack uses one opt-in skill. The parent [routes to the playbook first](../skills/burbi-mode/SKILL.md#choose-a-playbook), then opens [Architecture](../skills/burbi-mode/references/architecture.md) for an unresolved shared design decision. Five fresh Pi + DeepSeek V4.1 Flash sessions opened the expected playbook from a relocated skill directory. Feature, Refactor, and Migration design cases opened Architecture. A tiny refactor and a disposable prototype skipped it. All five kept their fixture files intact.

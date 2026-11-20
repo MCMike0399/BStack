@@ -6,6 +6,42 @@ disable-model-invocation: true
 
 # Burbi-mode
 
+## Choose a playbook
+
+Route by what the user wants done now. For a routed task, the first tool action is to open the selected playbook, using the link relative to this skill file. Follow the steps in the file you opened. If the playbook is unavailable, report that and use the engineering rules. The engineering rules apply on every route.
+
+| Requested outcome | Playbook |
+| --- | --- |
+| Explain existing behavior or diagnose a correctness failure | [Investigation](playbooks/investigation.md) |
+| Fix incorrect behavior now | [Bug fix](playbooks/bug-fix.md) |
+| Plan, add, or intentionally change behavior | [Feature](playbooks/feature.md) |
+| Change code structure while preserving behavior | [Refactor](playbooks/refactor.md) |
+| Plan a transition, build a converter for existing state, or carry out a migration | [Migration](playbooks/migration.md) |
+| Measure, diagnose, or improve speed or resource use | [Performance](playbooks/performance.md) |
+| Try options in a disposable design exercise or compare behavior through a prototype | [Prototype](playbooks/prototype.md) |
+| Assess a diff or proposed change and report findings | [Review](playbooks/review.md) |
+| Run checks or exercise behavior and report a verdict | [Verification](playbooks/verification.md) |
+
+Choose the route for the deliverable requested now. A request to explain, fix, and verify a correctness defect uses Bug fix. A request for a check and verdict uses Verification. Assess an existing proposal with Review. Use Prototype for a requested prototype or a disposable comparison. For a design-only request, open the playbook for the underlying change and finish with the design and its evidence. Performance and Migration apply when measurement or a transition is central, including analysis-only work. Follow an explicitly named playbook within the task's limits.
+
+For Investigation, Review, Verification, and requests with edits ruled out, preserve project files, the checkout and index, and shared state. A request limited to planning, reporting, or measurement has that same boundary. Put disposable probe files outside the project tree. An explicitly requested output file is part of the deliverable. For a named Bug fix with a no-edit limit, follow its first two steps and report the evidence and untested proposal. Finish at the requested deliverable, within the task's authorization for commits and publication.
+
+For work outside these routes, use the engineering rules alone. Keep the playbook on follow-ups with the same outcome. Open the next playbook when the user asks for a different step, including when one request calls for a review followed by implementation.
+
+## Find project context
+
+Read the applicable project instructions or use the ones already loaded. If they contain a routing table, match the affected area and read the files or sections named in that entry. Expand to another topic only when evidence from the selected docs or code shows that it is involved. Where project guidance is absent, find the entry point and checks in the nearest code and configuration. Verify claims about current behavior against the code or an observation within the task's authorization.
+
+## Resolve a shared design decision
+
+During Feature, Refactor, or Migration, open [Architecture](references/architecture.md) when the task leaves a shared interface or state ownership decision unresolved and the choice affects dependent callers, Workers, or deployed versions. The parent settles the decision within its scope before assigning dependent work. Return to the selected playbook with the result.
+
+## Delegate an assignment
+
+When the user asks to delegate, use the harness's available subagent capability. Give the delegate the core instruction, the engineering rules, and the applicable role. A [Worker](roles/worker.md) receives one bounded assignment with the selected playbook, the starting snapshot, writable scope, and acceptance check. Include the settled design constraints for implementation or the relevant method for an assignment to draft a design. An [Advisor](roles/advisor.md) receives the question or fixed artifact, the criteria, and evidence. Supply them inline when the Advisor has no file tools. The parent inspects the result, resolves findings, and verifies any integrated change.
+
+## Engineering rules
+
 1. Before acting, choose the smallest scope that meets the goal and decide what observable result would show it worked. Before calling the work done, check that result and say what remains unverified.
 2. Before changing stateful logic, identify where the state lives, what can change it, and what must stay true afterward. If states are only implied by flags or scattered conditionals, name the states and the allowed transitions first. Restructure only when the task calls for it.
 3. If a step needs approval you don't have, stop before taking it and say which approval is missing. Keep working only on what is already authorized and doesn't depend on that step. Don't reach the blocked result another way.
