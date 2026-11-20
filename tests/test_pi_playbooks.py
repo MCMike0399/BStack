@@ -11,6 +11,7 @@ import subprocess
 import sys
 import unittest
 
+from pi_runner import deepseek_key, messages_from, run_pi, tool_trace
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills/burbi-mode/SKILL.md"
@@ -140,46 +141,6 @@ def prepare_case(workspace, case):
         )
 
 
-def run_pi(workspace, prompt):
-    command = [
-        "pi", "--print", "--mode", "json", "--model", "deepseek/deepseek-flash", "--thinking", "low",
-        "--offline", "--no-session", "--no-extensions", "--no-mcp", "--no-prompt-templates",
-        "--no-themes", "--no-skills", "--tools", "read,bash,edit,write,grep,find,ls",
-        "--skill", str(SKILL), "--append-system-prompt", str(ROOT / "core/instructions.md"),
-        "--", f"/skill:burbi-mode {prompt}",
-    ]
-    run = subprocess.run(command, cwd=workspace, env=ENVIRONMENT, capture_output=True, text=True, timeout=150)
-    if run.returncode:
-        raise RuntimeError(f"Pi exited {run.returncode}. {run.stderr.strip()}")
-    messages = []
-    for line in run.stdout.splitlines():
-        if line.startswith("{"):
-            event = json.loads(line)
-            if event.get("type") == "message_end":
-                messages.append(event["message"])
-    return messages
-
-
-def tool_trace(messages):
-    calls = {}
-    for message in messages:
-        if message.get("role") == "assistant":
-            for block in message.get("content", []):
-                if block.get("type") == "toolCall":
-                    args = block.get("arguments", {})
-                    calls[block["id"]] = {
-                        "name": block["name"],
-                        "target": args.get("path") or args.get("command") or "",
-                        "result": "",
-                        "error": None,
-                    }
-        if message.get("role") == "toolResult" and message.get("toolCallId") in calls:
-            call = calls[message["toolCallId"]]
-            call["error"] = message.get("isError")
-            call["result"] = "\n".join(item["text"] for item in message["content"] if item.get("type") == "text")
-    return list(calls.values())
-
-
 def trace_line(call):
     return f"{call['name']}: {call['target']}"
 
@@ -187,6 +148,7 @@ def trace_line(call):
 @unittest.skipUnless(os.environ.get("BSTACK_TEST_PI") == "1", "set BSTACK_TEST_PI=1 for live Pi runs")
 class PiPlaybookTest(unittest.TestCase):
     def test_routes_and_observable_results(self):
+        key = deepseek_key()
         with TemporaryDirectory(prefix="exports-") as scratch:
             root = Path(scratch)
             for index, case in enumerate(CASES):
@@ -197,7 +159,8 @@ class PiPlaybookTest(unittest.TestCase):
                 workspace = root / str(index)
                 before = project_files(workspace)
                 before_git = git_state(workspace)
-                messages = run_pi(workspace, case.prompt)
+                with TemporaryDirectory(prefix="pi-", dir=root) as runtime:
+                    messages = messages_from(run_pi(workspace, Path(runtime), key, case.prompt))
                 after = project_files(workspace)
                 changes = {path for path in before.keys() | after.keys() if before.get(path) != after.get(path)}
                 return workspace, case, messages, changes, git_state(workspace) == before_git

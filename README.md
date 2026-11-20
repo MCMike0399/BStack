@@ -9,7 +9,17 @@ Development continues on `main`. Pi with DeepSeek V4.1 Flash is the first test e
 
 ## Try Burbi-mode in Pi
 
-Run from the repository root with a configured DeepSeek connection.
+Run from the repository root with a configured DeepSeek connection. Check
+`~/.pi/agent/AGENTS.md` or the corresponding file under your
+`PI_CODING_AGENT_DIR` if you use a custom profile. If that profile already
+loads the BStack core, use the command below.
+
+```sh
+pi --model deepseek/deepseek-flash \
+  --skill skills/burbi-mode/SKILL.md
+```
+
+For a Pi profile without the core, append it for this invocation.
 
 ```sh
 pi --model deepseek/deepseek-flash \
@@ -21,7 +31,18 @@ Start an engineering request with `/skill:burbi-mode`. Burbi-mode selects a play
 
 ## Test the playbooks
 
-Run `python3 -B -m unittest discover -s tests` to check the skill and its links. With Pi and a DeepSeek connection configured, run `BSTACK_TEST_PI=1 python3 -B -m unittest discover -s tests -v` for live checks. These use disposable export-worker fixtures and check the selected playbook, the edits made, and the behavior of the resulting code.
+Run `python3 -B -m unittest discover -s tests` to check the skill and its links.
+If Pi is on PATH, this also exercises the README invocations in isolated
+profiles using a loopback provider with no DeepSeek credentials. The loader
+check has been exercised with Pi 1.5.0. With Pi and a DeepSeek
+connection configured, run `BSTACK_TEST_PI=1 python3 -B -m unittest discover -s tests -v`
+for live checks. These use disposable export-worker fixtures and check the
+selected playbook, the edits made, and the behavior of the resulting code.
+
+## Compare guidance with an eval
+
+Run the [export timing eval](docs/eval-export-timing.md) to compare how two
+guidance configurations investigate the same benchmark claim.
 
 ## Try the subagent experiment
 
