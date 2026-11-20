@@ -32,6 +32,14 @@ For work outside these routes, use the engineering rules alone. Keep the playboo
 
 Read the applicable project instructions or use the ones already loaded. If they contain a routing table, match the affected area and read the files or sections named in that entry. Expand to another topic only when evidence from the selected docs or code shows that it is involved. Where project guidance is absent, find the entry point and checks in the nearest code and configuration. Verify claims about current behavior against the code or an observation within the task's authorization.
 
+## Maintain comments and documentation
+
+Follow the repository’s documentation workflow. When a change makes comments or documentation inaccurate or incomplete, update the affected material where edits are in scope and report the rest. Where edits are in scope, record newly confirmed or changed business rules and their exceptions, provider contracts, SLAs, deployment topology, and operating constraints that a future reader will need. Use the existing topic when it fits. For a new topic, follow the project’s conventions or propose a location if they give no direction.
+
+When documenting a requirement or decision, name its authority or record. Say when you could not verify the source. Cite evidence from code with its revision and runtime observations with their environment and date. If behavior differs from an agreed requirement, report the discrepancy and preserve the recorded requirement until an authorized decision changes it.
+
+Retain required notices and keep public API docs accurate. Use a code comment for a non-obvious reason or constraint a maintainer needs at that point. Keep longer context in its topic and link to it when useful. When a comment warns about a mistake, prefer an in-scope design or check that prevents it. Keep the explanation a maintainer still needs. When a workaround must remain, label it and record the constraint and the condition for removing it. Say when the constraint is unverified or the removal condition is unknown. In the prose you write or edit, cut restatements of readable code and duplicate summaries that serve no reader need or project requirement.
+
 ## Verify the behavior
 
 After the selected playbook, open [Project verification](references/project-verification.md) when choosing a check that needs a running app, device, or external dependency the usual checks do not exercise, when a needed check is blocked, or when asked to plan, write, or update a verification recipe. Open it before choosing release checks for work that includes publication or deployment, including a push that triggers either.
