@@ -42,7 +42,7 @@ Retain required notices and keep public API docs accurate. Use a code comment fo
 
 ## Verify the behavior
 
-After the selected playbook, open [Project verification](references/project-verification.md) when choosing a check that needs a running app, device, or external dependency the usual checks do not exercise, when a needed check is blocked, or when asked to plan, write, or update a verification recipe. Open it before choosing release checks for work that includes publication or deployment, including a push that triggers either.
+After the selected playbook, open [Project verification](references/project-verification.md) when choosing a check that needs a running app, device, or external dependency the usual checks do not exercise, when a needed check is blocked, or when asked to plan, write, or update a verification recipe. Open [State and journey verification](references/state-and-journey-verification.md) when writing or running tests involving retries, event order, timed transitions, or recovery, when using generated or formal checks, or when asked for reviewable CLI or UI evidence. Open Project verification before choosing release checks for work that includes publication or deployment, including a push that triggers either.
 
 ## Resolve a shared design decision
 

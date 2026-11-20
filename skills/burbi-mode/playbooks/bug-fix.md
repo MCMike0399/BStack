@@ -1,5 +1,7 @@
 # Bug fix
 
+For a bug involving retries, event order, timed transitions, or recovery, open [Project verification](../references/project-verification.md) and [State and journey verification](../references/state-and-journey-verification.md) before reproducing it.
+
 1. Reproduce the reported failure before editing. Use the project's documented check for the affected behavior when available. Otherwise, find a small way to exercise the affected entry point. Confirm the symptom matches and record the expected and actual results. Run checks within the task's existing authorization. If the original surface is unavailable or outside that authorization, note the gap and try a substitute check that fails because of the same defect. If no check reproduces it, use concrete evidence of the cause to decide whether a fix is justified. If you have neither, report what you tried and what remains unverified.
 2. Trace the evidence to the first place the system goes wrong. Identify the smallest correction that addresses that cause and preserves supported behavior.
 3. Apply the correction when the task calls for edits. Keep any repair of past data effects within the requested scope. If existing checks would miss the defect, add a focused regression check and show that it fails on the unfixed code when feasible. Report any gap in that demonstration.
