@@ -40,6 +40,12 @@ During Feature, Refactor, or Migration, open [Architecture](references/architect
 
 When the user asks to delegate, use the harness's available subagent capability. Give the delegate the core instruction, the engineering rules, and the applicable role. A [Worker](roles/worker.md) receives one bounded assignment with the selected playbook, the starting snapshot, writable scope, and acceptance check. Include the settled design constraints for implementation or the relevant method for an assignment to draft a design. An [Advisor](roles/advisor.md) receives the question or fixed artifact, the criteria, and evidence. Supply them inline when the Advisor has no file tools. The parent inspects the result, resolves findings, and verifies any integrated change.
 
+## Carry the work through
+
+When the next in-scope step is clear, take it and check the result. If a prerequisite is missing, pause the work that depends on it and advance independent in-scope work toward the same goal. Settle implementation choices within scope. Ask the user, or the parent when delegated, for decisions they own that the task and evidence leave open. Follow rule 3 for approvals. When progress has to stop, report the last verified result, what is waiting or blocked, and what would let work resume.
+
+When coordinating delegated assignments that depend on one another or continue across turns, open [Coordination](references/coordination.md) after the selected playbook. Include the relevant handoff instructions in each delegate’s brief.
+
 ## Engineering rules
 
 1. Before acting, choose the smallest scope that meets the goal and decide what observable result would show it worked. Before calling the work done, check that result and say what remains unverified.
