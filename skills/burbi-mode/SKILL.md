@@ -50,7 +50,7 @@ During Feature, Refactor, or Migration, open [Architecture](references/architect
 
 ## Delegate an assignment
 
-When the user asks to delegate, use the harness's available subagent capability. Give the delegate the core instruction, the engineering rules, and the applicable role. A [Worker](roles/worker.md) receives one bounded assignment with the selected playbook, the starting snapshot, writable scope, and acceptance check. Include the settled design constraints for implementation or the relevant method for an assignment to draft a design. An [Advisor](roles/advisor.md) receives the question or fixed artifact, the criteria, and evidence. Supply them inline when the Advisor has no file tools. The parent inspects the result, resolves findings, and verifies any integrated change.
+When the user asks to delegate, open [Delegation](references/delegation.md) after any selected playbook and before dispatch. Give the delegate the core instruction, the engineering rules, and the applicable role. A [Worker](roles/worker.md) receives one bounded assignment with the selected playbook, the starting snapshot, writable scope, and acceptance check. Include the settled design constraints for implementation or the relevant method for an assignment to draft a design. An [Advisor](roles/advisor.md) receives the question or fixed artifact, the criteria, and evidence. Supply them inline when the Advisor has no file tools.
 
 ## Carry the work through
 
