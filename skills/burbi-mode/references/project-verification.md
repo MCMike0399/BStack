@@ -1,13 +1,7 @@
 # Project verification
 
-When asked to plan, write, or update a verification recipe, use [Verification recipes](verification-recipes.md) to guide that work.
-
-Open [State and journey verification](state-and-journey-verification.md) for checks involving retries, event order, timed transitions, or recovery, for generated tests or formal checks, or when asked for reviewable CLI or UI evidence.
-
 1. **Choose the check.** Identify the affected behavior, the entry point its user or caller uses, and the observable result that would pass. Follow the project’s feature map or verification recipe when it has one. Otherwise find the closest existing test or driver in the repo’s commands, tests, or runbooks. When delegating a check, include the relevant project recipe and pass condition in the brief.
 2. **Sequence release checks.** When shipping is in scope, identify the first action that can trigger publication or deployment, including a push when the project releases from it. Run the acceptance checks that can exercise the candidate before that action. Hold the action if a check required before it fails or is inconclusive. For a check that needs deployment, name the stage where it runs and hold any later stage that requires a passing result. Confirm the deployed build matches the candidate before attributing the result to it. Follow the project’s release procedure within the task’s authorization.
 3. **Prepare the surface.** Confirm the revision or build, environment, and prerequisites the check needs. Verify readiness for the intended action. Use disposable inputs when the check writes state. When a dry run or substitute affects authorization or coverage, establish which effects it actually skips.
 4. **Exercise and inspect.** Within the task’s authorization, drive the entry point with the project’s tools. Check what the action returns or displays and any relevant lasting effect. Verify persistence by reading the resulting state when the behavior depends on it. Confirm that the intended path ran, including the relevant setting or service when a fallback is possible. If the check starts below the entry point or stops before reaching the intended path, report what it exercised and what remains unverified.
 5. **Clean up and report.** Preserve evidence in a location the task allows, then clean up the resources created by the run even when setup or the check fails. Report any residual state. For each relevant surface, record the checked revision or build, environment, what ran, what was observed, and any artifact needed to check the claim. Distinguish observed behavior from build, CI, deployment, and health receipts. Include failures, skips, and gaps that affect the verdict.
-
-Return to the selected playbook for the task’s remaining work.

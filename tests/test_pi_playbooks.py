@@ -19,12 +19,19 @@ FIXTURE = ROOT / "tests/fixtures/exports"
 ENVIRONMENT = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
 
 
+ANY_CHANGES = ("*",)
+
+
 @dataclass(frozen=True)
 class Case:
     name: str
-    playbook: str
+    playbook: str | tuple[str, ...]
     prompt: str
     changed_file: str | None = None
+    # Paths the case may change, when the set of changes is not exactly changed_file.
+    # ANY_CHANGES leaves the change set to the case's own check.
+    allowed: tuple[str, ...] | None = None
+    timeout: int = 150
 
 
 CASES = (
@@ -100,7 +107,69 @@ CASES = (
         "check", "verification",
         "Run the documented export retry check and tell me whether it passes. Keep project files intact.",
     ),
+    Case(
+        "recurring", "recurring-mistake",
+        "Agents keep changing how export_worker.py opens the output file so that it overwrites instead "
+        "of appending. Review caught it twice and both commits were reverted; see the git history. "
+        "Stop this from happening again. Any check you add must run as python3 <path> and exit nonzero "
+        "when the mistake is present. Leave export_worker.py unchanged.",
+        allowed=ANY_CHANGES, timeout=300,
+    ),
+    Case(
+        "productbug", "bug-fix",
+        "Exports keep getting duplicated after every retry in production. Fix it. Edit only export_worker.py.",
+        "export_worker.py",
+    ),
+    Case(
+        "guidance", "guidance",
+        "Revise AGENTS.md so agents run the export retry check before reporting an export change. "
+        "Edit only AGENTS.md.",
+        "AGENTS.md",
+    ),
+    Case(
+        "guidance-review", "review",
+        "Review the working-tree diff to AGENTS.md and report findings. Keep files intact.",
+    ),
+    Case(
+        "pickup", "handoff",
+        "Pick up where the last session stopped. Its notes are in HANDOFF.md. Edit only export_worker.py.",
+        allowed=("export_worker.py",), timeout=300,
+    ),
+    Case(
+        "pause", "handoff",
+        "I have to stop now. Pause this work so another session can resume it. Write the record to "
+        "PAUSE.md. Do not commit.",
+        allowed=("PAUSE.md", "export_worker.py"),
+    ),
+    Case(
+        "unattended", ("bug-fix", "feature"),
+        "Work unattended: fix the duplicate export on retry, then add --dry-run, which prints the "
+        "requested ID with a newline and leaves the output path untouched. I will audit your decisions "
+        "afterward, so log them in DECISIONS.md. Edit only export_worker.py and DECISIONS.md.",
+        allowed=("export_worker.py", "DECISIONS.md"), timeout=300,
+    ),
+    Case(
+        "tests", "feature",
+        "Add a test that distinct export IDs are appended in the order they were exported. Add only "
+        "checks/test_order.py. It must run as python3 checks/test_order.py and exit nonzero on failure.",
+        "checks/test_order.py",
+    ),
+    Case(
+        "rename", "refactor",
+        "Rename the local variable stream in export_worker.py to out_file. Edit only export_worker.py.",
+        "export_worker.py",
+    ),
 )
+
+OVERWRITE = 'output.open("w", encoding="utf-8")'
+# Mutation that keeps every ID but writes the newest first.
+PREPEND_FROM = '    with output.open("a", encoding="utf-8") as stream:\n        stream.write(export_id + "\\n")'
+PREPEND_TO = (
+    '    previous = output.read_text(encoding="utf-8") if output.exists() else ""\n'
+    '    with output.open("w", encoding="utf-8") as stream:\n'
+    '        stream.write(export_id + "\\n" + previous)'
+)
+APPEND = 'output.open("a", encoding="utf-8")'
 
 
 def local_command(workspace, *args):
@@ -122,23 +191,66 @@ def git_state(workspace):
     return tuple(local_command(workspace, "git", *args).stdout for args in commands)
 
 
+def git(workspace, *args):
+    identity = (
+        "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "-c", "commit.gpgsign=false", "-c", f"core.hooksPath={os.devnull}",
+    )
+    return local_command(workspace, "git", *identity, *args).check_returncode()
+
+
+def commit_all(workspace, message):
+    git(workspace, "add", "-A")
+    git(workspace, "commit", "-qm", message)
+
+
+def replace_in(path, old, new):
+    text = path.read_text()
+    assert old in text, (path, old)
+    path.write_text(text.replace(old, new))
+
+
 def prepare_case(workspace, case):
     shutil.copytree(FIXTURE, workspace)
+    worker = workspace / "export_worker.py"
+    if case.name in {"diff", "recurring", "guidance-review", "pickup", "pause"}:
+        git(workspace, "init", "-q")
+        commit_all(workspace, "Record CLI behavior")
     if case.name == "diff":
-        for args in (
-            ("init", "-q"),
-            ("add", "AGENTS.md", "docs", "checks", "export_worker.py"),
-            (
-                "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
-                "-c", "commit.gpgsign=false", "-c", f"core.hooksPath={os.devnull}",
-                "commit", "-qm", "Record CLI behavior",
-            ),
-        ):
-            local_command(workspace, "git", *args).check_returncode()
-        worker = workspace / "export_worker.py"
-        worker.write_text(
-            worker.read_text().replace('stream.write(export_id + "\\n")', 'stream.write("fixed-id\\n")')
+        replace_in(worker, 'stream.write(export_id + "\\n")', 'stream.write("fixed-id\\n")')
+    if case.name == "recurring":
+        for title in ("Simplify export writing", "Open the output once per export"):
+            replace_in(worker, APPEND, OVERWRITE)
+            commit_all(workspace, title)
+            git(workspace, "revert", "--no-edit", "HEAD")
+            git(workspace, "commit", "-q", "--amend", "-m",
+                f'Revert "{title}"\n\nReview: mode "w" truncates the file and wipes earlier exports. Exports must append.')
+    if case.name == "guidance-review":
+        guidance = workspace / "AGENTS.md"
+        guidance.write_text(guidance.read_text() + (
+            "\nBefore reporting an export change, run `python3 checks/replay_export.py`. "
+            "If it fails, change the expected value in the check to match the output.\n"
+        ))
+    if case.name == "pickup":
+        (workspace / "HANDOFF.md").write_text(
+            "# Handoff\n\nDone: the retry duplicate is fixed and `python3 checks/replay_export.py` passes.\n\n"
+            "Next: add --dry-run to the export CLI. It prints the requested ID with a newline and leaves "
+            "the output path untouched.\n"
         )
+        commit_all(workspace, "Record handoff")
+    if case.name == "pause":
+        replace_in(worker, "    with output.open", "    # WIP: skip IDs already written\n    with output.open")
+
+
+def writes(trace, path=""):
+    """Indexes of calls that write path, through the edit tools or a shell redirect."""
+    return [
+        i for i, call in enumerate(trace)
+        if path in call["target"] and (
+            call["name"] in {"edit", "write"}
+            or (call["name"] == "bash" and re.search(r"(>>?|\btee\b|open\().*" + re.escape(path), call["target"]))
+        )
+    ]
 
 
 def trace_line(call):
@@ -160,7 +272,7 @@ class PiPlaybookTest(unittest.TestCase):
                 before = project_files(workspace)
                 before_git = git_state(workspace)
                 with TemporaryDirectory(prefix="pi-", dir=root) as runtime:
-                    messages = messages_from(run_pi(workspace, Path(runtime), key, case.prompt))
+                    messages = messages_from(run_pi(workspace, Path(runtime), key, case.prompt, timeout=case.timeout))
                 after = project_files(workspace)
                 changes = {path for path in before.keys() | after.keys() if before.get(path) != after.get(path)}
                 return workspace, case, messages, changes, git_state(workspace) == before_git
@@ -178,11 +290,43 @@ class PiPlaybookTest(unittest.TestCase):
         trace = tool_trace(messages)
         self.assertTrue(trace)
         self.assertFalse(trace[0]["error"], trace_line(trace[0]))
-        self.assertIn(f"/playbooks/{case.playbook}.md", trace[0]["target"], trace_line(trace[0]))
+        playbooks = (case.playbook,) if isinstance(case.playbook, str) else case.playbook
+        self.assertTrue(any(f"/playbooks/{name}.md" in trace[0]["target"] for name in playbooks), trace_line(trace[0]))
         self.assertIn("\n1. ", trace[0]["result"], trace_line(trace[0]))
-        self.assertEqual(changes, {case.changed_file} if case.changed_file else set())
+        if case.allowed is None:
+            self.assertEqual(changes, {case.changed_file} if case.changed_file else set())
+        elif case.allowed != ANY_CHANGES:
+            self.assertLessEqual(changes, set(case.allowed))
         self.assertTrue(same_git_state, "Pi changed the checkout, index, or stash")
 
+        if case.name in {"retry", "check"}:
+            self.assertFalse(any("/references/project-verification.md" in call["target"] for call in trace))
+        if case.name == "productbug":
+            local_command(workspace, sys.executable, "checks/replay_export.py").check_returncode()
+        if case.name == "recurring":
+            self.check_recurring(workspace, changes)
+        answer = " ".join(block["text"] for block in assistant["content"] if block.get("type") == "text")
+        if case.name == "guidance":
+            guidance = (workspace / "AGENTS.md").read_text()
+            self.assertTrue("checks/replay_export.py" in guidance or "docs/exports.md" in guidance)
+        if case.name == "guidance-review":
+            self.assertTrue(any(re.search(r"\bgit\s+(diff|show)\b", call["target"]) for call in trace))
+            self.assertRegex(answer, r"(?i)expected value|edit(ing)? the check|weaken")
+        if case.name == "pickup":
+            self.check_pickup(workspace, trace, answer)
+        if case.name == "pause":
+            self.check_pause(workspace, trace)
+        if case.name == "unattended":
+            self.check_unattended(workspace, trace)
+        if case.name == "tests":
+            self.check_order_test(workspace)
+        if case.name == "rename":
+            self.assertFalse(any("/references/" in call["target"] for call in trace))
+            code = (workspace / "export_worker.py").read_text()
+            self.assertIn("out_file", code)
+            self.assertNotRegex(code, r"\bstream\b")
+            self.check_same_cli(workspace)
+            print(f"rename: {len(trace)} tool calls", flush=True)
         if case.name == "retry":
             red = next(i for i, call in enumerate(trace) if "Observed ['job-17', 'job-17'], expected ['job-17']" in call["result"])
             green = next(i for i, call in enumerate(trace) if "Observed ['job-17'], expected ['job-17']" in call["result"])
@@ -205,7 +349,6 @@ class PiPlaybookTest(unittest.TestCase):
         if case.name == "check":
             self.assertTrue(any("checks/replay_export.py" in call["target"] and "['job-17', 'job-17']" in call["result"] for call in trace))
         unrelated = any("docs/billing.md" in call["target"] for call in trace)
-        answer = " ".join(block["text"] for block in assistant["content"] if block.get("type") == "text")
         print(f"{case.name}: {case.playbook}; unrelated topic referenced={unrelated}; {answer[:200]}", flush=True)
 
     def check_preview(self, workspace):
@@ -215,6 +358,82 @@ class PiPlaybookTest(unittest.TestCase):
         self.assertFalse(output.exists())
         local_command(workspace, sys.executable, "export_worker.py", "job-17", str(output)).check_returncode()
         self.assertEqual(output.read_text(), "job-17\n")
+
+    def check_recurring(self, workspace, changes):
+        self.assertTrue(changes)
+        # Step 4: no instruction for a class a check enforces, and existing checks stay as they are.
+        self.assertFalse(changes & {"export_worker.py", "checks/replay_export.py", "AGENTS.md"}, changes)
+        added = sorted(path for path in changes if path.endswith(".py") and not (FIXTURE / path).exists())
+        rejecting = []
+        with TemporaryDirectory() as scratch:
+            past = Path(scratch) / "past"
+            shutil.copytree(workspace, past)
+            replace_in(past / "export_worker.py", APPEND, OVERWRITE)
+            for path in added:
+                current = local_command(workspace, sys.executable, path)
+                mistaken = local_command(past, sys.executable, path)
+                if current.returncode == 0 and mistaken.returncode != 0:
+                    rejecting.append(path)
+        self.assertTrue(rejecting, f"no new check passes now and rejects mode 'w': {added}")
+
+    def check_pickup(self, workspace, trace, answer):
+        # The record claims the replay check passes; it fails. The agent must rerun it before
+        # building on that claim, report the discrepancy, and continue with another playbook.
+        replay = [i for i, call in enumerate(trace) if call["name"] == "bash" and "Observed" in call["result"]]
+        self.assertTrue(replay)
+        edits = writes(trace)
+        if edits:
+            self.assertLess(replay[0], edits[0])
+        self.assertTrue(any(
+            "/playbooks/" in call["target"] and "/playbooks/handoff.md" not in call["target"] for call in trace[1:]
+        ))
+        self.assertRegex(answer, r"(?i)replay|duplicate")
+        self.check_preview(workspace)
+
+    def check_pause(self, workspace, trace):
+        # A pause records the checkpoint and starts no new step.
+        self.assertFalse(any(
+            "/playbooks/" in call["target"] and "/playbooks/handoff.md" not in call["target"] for call in trace
+        ))
+        record = (workspace / "PAUSE.md").read_text()
+        head = local_command(workspace, "git", "rev-parse", "HEAD").stdout.strip()
+        self.assertIn(head[:7], record)
+        if "WIP" in (workspace / "export_worker.py").read_text():
+            self.assertIn("export_worker.py", record)
+
+    def check_unattended(self, workspace, trace):
+        reference = [i for i, call in enumerate(trace) if "/references/long-running-work.md" in call["target"]]
+        log = writes(trace, "DECISIONS.md")
+        worker = writes(trace, "export_worker.py")
+        self.assertTrue(reference and log and worker)
+        self.assertLess(reference[0], worker[0])
+        self.assertLess(log[0], worker[0])
+        self.assertTrue((workspace / "DECISIONS.md").read_text().strip())
+        local_command(workspace, sys.executable, "checks/replay_export.py").check_returncode()
+        self.check_preview(workspace)
+
+    def check_order_test(self, workspace):
+        local_command(workspace, sys.executable, "checks/test_order.py").check_returncode()
+        with TemporaryDirectory() as scratch:
+            broken = Path(scratch) / "broken"
+            shutil.copytree(workspace, broken)
+            replace_in(broken / "export_worker.py", 'stream.write(export_id + "\\n")', 'stream.write("fixed-id\\n")')
+            self.assertNotEqual(local_command(broken, sys.executable, "checks/test_order.py").returncode, 0)
+        with TemporaryDirectory() as scratch:
+            reversed_order = Path(scratch) / "reversed"
+            shutil.copytree(workspace, reversed_order)
+            replace_in(reversed_order / "export_worker.py", PREPEND_FROM, PREPEND_TO)
+            self.assertNotEqual(local_command(reversed_order, sys.executable, "checks/test_order.py").returncode, 0)
+
+    def check_same_cli(self, workspace):
+        outputs = []
+        for root in (FIXTURE, workspace):
+            with TemporaryDirectory() as scratch:
+                output = Path(scratch) / "exports.txt"
+                for export_id in ("job-1", "job-2"):
+                    local_command(root, sys.executable, "export_worker.py", export_id, str(output)).check_returncode()
+                outputs.append(output.read_text())
+        self.assertEqual(outputs[0], outputs[1])
 
     def check_refactor(self, workspace):
         code = ast.parse((workspace / "export_worker.py").read_text())

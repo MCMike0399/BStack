@@ -1,10 +1,14 @@
 # Delegation
 
+Give each delegate the standing instruction "Answer direct questions directly. Don’t restate the request unless it helps resolve an ambiguity.", the engineering rules from the Burbi-mode skill, and the applicable role. A [Worker](../roles/worker.md) receives one bounded assignment with the selected playbook, the starting snapshot, writable scope, and acceptance check. Include the settled design constraints for implementation or the relevant method for an assignment to draft a design. An [Advisor](../roles/advisor.md) receives the question or fixed artifact, the criteria, and evidence. Supply them inline when the Advisor has no file tools. When [Coordination](coordination.md) applies, include the Coordination steps the delegate must follow in each brief.
+
 1. **Choose the launch.** Use the [Worker](../roles/worker.md) or [Advisor](../roles/advisor.md) contract and the harness's available subagent capability. Check the launcher's effective tools, workspace isolation, and credential access against the assignment's required boundaries. If the launcher cannot enforce a required boundary or select a required model, hold dispatch and report the gap. Use a separate launcher only when it is authorized and meets the same requirements. Name the launcher used.
 2. **Bind the handoff to the inputs.** Give the Worker the agreed starting snapshot and writable scope. When the assignment calls for independent review, start a fresh Advisor with the requirement, artifact, and relevant evidence. Keep the author's and parent's conclusions out of the brief. The parent records a snapshot ID for the exact candidate and any base or other input the review depends on. Include that ID with references to fixed versions the Advisor can read within scope, or include evidence inline from those same inputs. Ask the Advisor to return the supplied ID and identify what it covered and any gaps.
 3. **Check the result.** Check the returned artifact, changed paths, and evidence against the assignment. When relying on a review, confirm before integration that the report covers the question and the actual inputs match the reviewed snapshot. A missing or differing ID leaves review coverage unverified. If a relevant input changes, get a review of the new snapshot before relying on that coverage. Reproduce material findings where possible and resolve them before integration. Rerun the acceptance check on the integrated result. Use [Coordination](coordination.md) for ownership and follow-ups across dependent assignments.
 
 ## Worked example · Export retry
+
+Illustration only. Do not carry out these steps. Adapt their shape to the current assignment.
 
 This assignment asks for a Worker fix and an independent review. Use a disposable copy of BStack's export fixture. A sequential retry leaves one row per export ID, and distinct IDs append in order. IDs are nonempty single-line strings. Keep the two-argument CLI and line-based output.
 

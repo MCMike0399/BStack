@@ -8,25 +8,28 @@ disable-model-invocation: true
 
 ## Choose a playbook
 
-Route by what the user wants done now. For a routed task, the first tool action is to open the selected playbook, using the link relative to this skill file. Follow the steps in the file you opened. If the playbook is unavailable, report that and use the engineering rules. The engineering rules apply on every route.
+Route by what the user wants done now. For a routed task, the first tool action is to open the selected playbook, using the link relative to this skill file, even before reading a file the request names. Follow the steps in the file you opened. If the playbook is unavailable, report that and use the engineering rules. The engineering rules apply on every route.
 
 | Requested outcome | Playbook |
 | --- | --- |
 | Explain existing behavior or diagnose a correctness failure | [Investigation](playbooks/investigation.md) |
 | Fix incorrect behavior now | [Bug fix](playbooks/bug-fix.md) |
-| Plan, add, or intentionally change behavior, or write or update a verification recipe in the repo | [Feature](playbooks/feature.md) |
+| Plan, add, or intentionally change behavior, or write or update tests or a verification recipe in the repo | [Feature](playbooks/feature.md) |
 | Change code structure while preserving behavior | [Refactor](playbooks/refactor.md) |
 | Plan a transition, build a converter for existing state, or carry out a migration | [Migration](playbooks/migration.md) |
 | Measure, diagnose, or improve speed or resource use | [Performance](playbooks/performance.md) |
 | Try options in a disposable design exercise or compare behavior through a prototype | [Prototype](playbooks/prototype.md) |
 | Assess a diff or proposed change and report findings | [Review](playbooks/review.md) |
 | Run checks or exercise behavior and report a verdict | [Verification](playbooks/verification.md) |
+| Stop a kind of wrong change that agents or contributors keep making | [Recurring mistake](playbooks/recurring-mistake.md) |
+| Write or revise instructions that agents load, such as a skill, playbook, agent instruction file, or delegate role, or evaluate how agents follow them | [Guidance](playbooks/guidance.md) |
+| Resume work another session left in progress, or pause work so another session can resume it | [Handoff](playbooks/handoff.md) |
 
-Choose the route for the deliverable requested now. A request to explain, fix, and verify a correctness defect uses Bug fix. A request for a check and verdict uses Verification. Assess an existing proposal with Review. Use Prototype for a requested prototype or a disposable comparison. For a design-only request, open the playbook for the underlying change and finish with the design and its evidence. Performance and Migration apply when measurement or a transition is central, including analysis-only work. Follow an explicitly named playbook within the task's limits.
+A request to explain, fix, and verify a correctness defect uses Bug fix. A request to add tests for existing behavior, or to update tests for an intended behavior change, uses Feature. A failing test whose cause is not yet known uses Bug fix. For a plan-only or design-only request, open the playbook for the underlying change and finish with the plan or design and its evidence. Performance and Migration apply when measurement or a transition is central, including analysis-only work. A converter for existing data or state uses Migration, even as a new script. A dependency or toolchain upgrade uses Migration. A defect that keeps occurring in the running product uses Bug fix. When the user reports that agents or contributors keep making the same kind of wrong change, use Recurring mistake, even if the request names an instruction as the remedy. A request to assess a guidance diff and report findings uses Review. To address review comments, route each comment by its requested outcome. When the request continues work from a different session, known to you only through a record such as notes, a transcript, or a branch, use Handoff first, then open the playbook for the remaining work. Follow an explicitly named playbook within the task's limits.
 
-For Investigation, Review, Verification, and requests with edits ruled out, preserve project files, the checkout and index, and shared state. A request limited to planning, reporting, or measurement has that same boundary. Put disposable probe files outside the project tree. An explicitly requested output file is part of the deliverable. For a named Bug fix with a no-edit limit, follow its first two steps and report the evidence and untested proposal. Finish at the requested deliverable, within the task's authorization for commits and publication.
+For Investigation, Review, Verification, and requests with edits ruled out, preserve project files, the checkout and index, and shared state. A request limited to planning, reporting, or measurement has that same boundary. Output that the project's own build or test commands write to paths version control ignores, such as caches, is allowed. Put disposable probe files outside the project tree. An explicitly requested output file is part of the deliverable. For a named Bug fix with a no-edit limit, follow its first two steps and report the evidence and untested proposal. Finish at the requested deliverable. Stage, commit, or publish only when the task authorizes it.
 
-For work outside these routes, use the engineering rules alone. Keep the playbook on follow-ups with the same outcome. Open the next playbook when the user asks for a different step, including when one request calls for a review followed by implementation.
+For work outside these routes, use the engineering rules and any reference whose condition applies. Keep the playbook on follow-ups with the same outcome. Open the next playbook when the user asks for a different step, including when one request calls for a review followed by implementation.
 
 ## Find project context
 
@@ -40,31 +43,31 @@ When documenting a requirement or decision, name its authority or record. Say wh
 
 Retain required notices and keep public API docs accurate. Use a code comment for a non-obvious reason or constraint a maintainer needs at that point. Keep longer context in its topic and link to it when useful. When a comment warns about a mistake, prefer an in-scope design or check that prevents it. Keep the explanation a maintainer still needs. When a workaround must remain, label it and record the constraint and the condition for removing it. Say when the constraint is unverified or the removal condition is unknown. In the prose you write or edit, cut restatements of readable code and duplicate summaries that serve no reader need or project requirement.
 
-## Verify the behavior
+## Open a reference
 
-After the selected playbook, open [Project verification](references/project-verification.md) when choosing a check that needs a running app, device, or external dependency the usual checks do not exercise, when a needed check is blocked, or when asked to plan, write, or update a verification recipe. Open [State and journey verification](references/state-and-journey-verification.md) when writing or running tests involving retries, event order, timed transitions, or recovery, when using generated or formal checks, or when asked for reviewable CLI or UI evidence. Open Project verification before choosing release checks for work that includes publication or deployment, including a push that triggers either.
+After opening any selected playbook, open each reference whose condition applies. Also open a reference that a playbook step links when that step applies. Return to the selected playbook with the result.
 
-## Resolve a shared design decision
-
-During Feature, Refactor, or Migration, open [Architecture](references/architecture.md) when the task leaves a shared interface or state ownership decision unresolved and the choice affects dependent callers, Workers, or deployed versions. The parent settles the decision within its scope before assigning dependent work. Return to the selected playbook with the result.
-
-## Delegate an assignment
-
-When the user asks to delegate, open [Delegation](references/delegation.md) after any selected playbook and before dispatch. Give the delegate the core instruction, the engineering rules, and the applicable role. A [Worker](roles/worker.md) receives one bounded assignment with the selected playbook, the starting snapshot, writable scope, and acceptance check. Include the settled design constraints for implementation or the relevant method for an assignment to draft a design. An [Advisor](roles/advisor.md) receives the question or fixed artifact, the criteria, and evidence. Supply them inline when the Advisor has no file tools.
+| Condition | Reference |
+| --- | --- |
+| A check needs a running app, device, or external dependency the usual checks do not exercise, or a needed check is blocked. For work that includes publication or deployment, including a push that triggers either, open it before choosing release checks. | [Project verification](references/project-verification.md) |
+| The task asks to plan, write, or update a verification recipe | [Verification recipes](references/verification-recipes.md) |
+| The bug, test, or check involves retries, event order, timed transitions, or recovery, you use generated or formal checks, or you are asked for reviewable CLI or UI evidence | [State and journey verification](references/state-and-journey-verification.md) |
+| The task leaves a shared interface or state ownership decision unresolved and the choice affects dependent callers, Workers, or deployed versions | [Architecture](references/architecture.md) |
+| The user asks to delegate, or you are about to dispatch a subagent. Open it before dispatch. | [Delegation](references/delegation.md) |
+| You coordinate delegated assignments that depend on one another or continue across turns | [Coordination](references/coordination.md) |
+| The user asks for work that runs unattended or that they will audit afterward, or asks for a decision log. Also open it when work with several dependent steps matches no playbook. | [Long-running work](references/long-running-work.md) |
 
 ## Carry the work through
 
 When the next in-scope step is clear, take it and check the result. If a prerequisite is missing, pause the work that depends on it and advance independent in-scope work toward the same goal. Settle implementation choices within scope. Ask the user, or the parent when delegated, for decisions they own that the task and evidence leave open. Follow rule 3 for approvals. When progress has to stop, report the last verified result, what is waiting or blocked, and what would let work resume.
-
-When coordinating delegated assignments that depend on one another or continue across turns, open [Coordination](references/coordination.md) after the selected playbook. Include the relevant handoff instructions in each delegate’s brief.
 
 ## Engineering rules
 
 1. Before acting, choose the smallest scope that meets the goal and decide what observable result would show it worked. Before calling the work done, check that result and say what remains unverified.
 2. Before changing stateful logic, identify where the state lives, what can change it, and what must stay true afterward. If states are only implied by flags or scattered conditionals, name the states and the allowed transitions first. Restructure only when the task calls for it.
 3. If a step needs approval you don't have, stop before taking it and say which approval is missing. Keep working only on what is already authorized and doesn't depend on that step. Don't reach the blocked result another way.
-4. If the same mistake happens twice, look first for a test, validation rule, or tool constraint that would catch or prevent it. Add another instruction only if no such check fits. If adding the check is outside the current task, propose it instead of adding it.
-5. For a migration or a series of related changes, split the work into steps you can verify separately. Check each step before starting work that depends on it. If the check fails or can't be run, say what failed or what's unverified, and pause the dependent work.
+4. When the same kind of mistake is found twice, prevent it with the first of these that can catch it: a design that removes the wrong path, a type the checker rejects, a lint or CI check, or a test. Add an instruction only when none can. If the check or instruction is outside the current task, propose it instead of adding it.
+5. For a series of dependent changes, split the work into steps you can verify separately. Check each step before starting work that depends on it. If the check fails or can't be run, say what failed or what's unverified, and pause the dependent work.
 6. When fixing a bug, trace the symptom back to the first place the system goes wrong, and fix it there. A guard, retry, or fallback at the symptom is a fix only if the state it handles is legitimate. If fixing the cause is outside the current task, propose that fix and say what remains unfixed.
 7. When writing or changing a test, assert only what users of the code can observe through its public interface, including its effects on outside systems. Take expected values from the requirement, not from the code under test. The test should fail if the observable behavior breaks and still pass if only the internals change.
 8. Before benchmarking or running an eval, say what decision the result will inform and what result would change that decision. Before trusting or reporting the number, check that the runs did the intended work and that errors, skipped steps, or unintended cache hits didn't distort the result. Use evidence from those runs, not a reading of the code, to explain what limited the result. Report the run count, the spread, and that limit with the number. If the run-to-run spread is as large as the difference, or you can't measure the spread, call the comparison inconclusive.
@@ -81,3 +84,4 @@ When coordinating delegated assignments that depend on one another or continue a
 19. When existing patterns leave a consequential design choice unresolved and a focused comparison could change the decision, state what evidence would favor each option. Sketch or prototype two meaningfully different approaches. The current design can be one of them. Use enough detail to test the deciding tradeoff and compare both on the same realistic case and constraints. Separate what you observed from what you inferred, and say what remains unresolved when recommending an approach.
 20. When a new requirement changes an assumption the existing design depends on, work out how you would design the affected part if the requirement had been there from the start. Use that design to find the smallest in-scope change to the model or contract that carries the old assumption. Update affected in-scope tests and documentation. If only a workaround fits the scope, keep it contained and explain what the fuller design would change and what remains unresolved.
 21. For a rewrite or migration, define the verifiable end state and identify which intermediate states other people, CI, or deployed clients will rely on. Keep those states working for their required uses and follow the agreed terms of any planned interruption. Keep other temporary breakage in isolated work that can be repaired or discarded before anyone relies on it. Give each temporary bridge a checkable removal condition. At the end, verify the target behavior, remove bridges whose conditions are met, and say what any remaining bridge still needs before it can be removed.
+22. Before reporting a change, read the whole diff of the edits you made and remove from them what the goal does not need, such as debug output, dead or commented-out code, unrelated edits, and unused options. Leave changes you did not make. Follow the project's supported pattern for the kind of code you write. When the nearest example is a workaround or a deprecated path, follow the project's supported pattern instead and say so.

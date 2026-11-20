@@ -25,7 +25,7 @@ def deepseek_key():
     return key
 
 
-def run_pi(workspace, runtime, key, prompt, *, skill=SKILL, core=CORE, tools=FILE_TOOLS, prefix=(), tool_env=None):
+def run_pi(workspace, runtime, key, prompt, *, skill=SKILL, core=CORE, tools=FILE_TOOLS, prefix=(), tool_env=None, timeout=150):
     profile = runtime / "pi"
     profile.mkdir()
     scratch = shlex.quote(str(runtime))
@@ -53,7 +53,7 @@ def run_pi(workspace, runtime, key, prompt, *, skill=SKILL, core=CORE, tools=FIL
         command.extend(("--skill", str(skill)))
         prompt = f"/skill:burbi-mode {prompt}"
     run = subprocess.run(
-        [*command, "--", prompt], cwd=workspace, env=environment, capture_output=True, text=True, timeout=150,
+        [*command, "--", prompt], cwd=workspace, env=environment, capture_output=True, text=True, timeout=timeout,
     )
     if run.returncode:
         raise RuntimeError(f"Pi exited {run.returncode}. {run.stderr.strip().replace(key, '[redacted]')}")

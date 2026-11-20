@@ -1,11 +1,11 @@
 # BStack
 
-Engineering guidance for coding agents, under design.
+Engineering guidance for coding agents, under design. The aim is engineer-grade output on everyday software work, on any model: turn recurring corrections into design, type, lint, and test checks before prose, and verify on real artifacts.
 
 - [The core](core/instructions.md) is a one-line standing instruction for ordinary requests.
-- [Burbi-mode](skills/burbi-mode/SKILL.md) is an opt-in skill for engineering work.
+- [Burbi-mode](skills/burbi-mode/SKILL.md) is the entry point for engineering work, invoked explicitly. It loads whole on each invocation and opens one playbook and only the references whose condition applies, so its size is budgeted by a test.
 
-Development continues on `main`. Pi with DeepSeek V4.1 Flash is the first test environment.
+Development continues on `main`. Pi with DeepSeek V4.1 Flash is the first test environment because it follows wording literally.
 
 ## Try Burbi-mode in Pi
 
@@ -27,7 +27,7 @@ pi --model deepseek/deepseek-flash \
   --skill skills/burbi-mode/SKILL.md
 ```
 
-Start an engineering request with `/skill:burbi-mode`. Burbi-mode selects a playbook for the requested outcome and uses the project's guidance to find relevant docs and checks. The parent opens the shared [Architecture reference](skills/burbi-mode/references/architecture.md) when the work depends on an unresolved design decision. Ask ordinary questions as plain text.
+Start an engineering request with `/skill:burbi-mode`. Burbi-mode selects a playbook for the requested outcome, opens a reference such as [Architecture](skills/burbi-mode/references/architecture.md) only when its condition applies, and uses the project's guidance to find relevant docs and checks. Ask ordinary questions as plain text.
 
 ## Test the playbooks
 
