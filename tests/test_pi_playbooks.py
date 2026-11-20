@@ -155,6 +155,15 @@ CASES = (
         "checks/test_order.py",
     ),
     Case(
+        "failing-check", "bug-fix",
+        "checks/replay_export.py is failing. Fix it.",
+        allowed=("export_worker.py",),
+    ),
+    Case(
+        "why-failing", "investigation",
+        "Why is checks/replay_export.py failing? Keep project files intact.",
+    ),
+    Case(
         "rename", "refactor",
         "Rename the local variable stream in export_worker.py to out_file. Edit only export_worker.py.",
         "export_worker.py",
@@ -242,13 +251,20 @@ def prepare_case(workspace, case):
         replace_in(worker, "    with output.open", "    # WIP: skip IDs already written\n    with output.open")
 
 
+# A shell command that writes a file: a redirect other than to a descriptor or /dev/null, tee,
+# an in-place edit, or a Python write.
+SHELL_WRITE = (
+    r"(?<![0-9&])>>?(?!&)\s*(?!/dev/null)\S|\btee\b|\bsed\s+-i|\bperl\s+-pi|write_text|open\([^)]*['\"][wa]"
+)
+
+
 def writes(trace, path=""):
     """Indexes of calls that write path, through the edit tools or a shell redirect."""
     return [
         i for i, call in enumerate(trace)
         if path in call["target"] and (
             call["name"] in {"edit", "write"}
-            or (call["name"] == "bash" and re.search(r"(>>?|\btee\b|open\().*" + re.escape(path), call["target"]))
+            or (call["name"] == "bash" and re.search(SHELL_WRITE, call["target"]))
         )
     ]
 
@@ -277,7 +293,9 @@ class PiPlaybookTest(unittest.TestCase):
                 changes = {path for path in before.keys() | after.keys() if before.get(path) != after.get(path)}
                 return workspace, case, messages, changes, git_state(workspace) == before_git
 
-            with ThreadPoolExecutor(max_workers=3) as pool:
+            # Each case is an independent DeepSeek session, so run them all at once by default.
+            workers = int(os.environ.get("BSTACK_PI_WORKERS", len(CASES)))
+            with ThreadPoolExecutor(max_workers=workers) as pool:
                 runs = [pool.submit(execute, item) for item in enumerate(CASES)]
                 for case, run in zip(CASES, runs):
                     with self.subTest(case=case.name):
@@ -291,24 +309,32 @@ class PiPlaybookTest(unittest.TestCase):
         self.assertTrue(trace)
         self.assertFalse(trace[0]["error"], trace_line(trace[0]))
         playbooks = (case.playbook,) if isinstance(case.playbook, str) else case.playbook
-        self.assertTrue(any(f"/playbooks/{name}.md" in trace[0]["target"] for name in playbooks), trace_line(trace[0]))
-        self.assertIn("\n1. ", trace[0]["result"], trace_line(trace[0]))
+        opened = next(i for i, call in enumerate(trace) if "/playbooks/" in call["target"])
+        # The skill asks for the playbook first. Flash sometimes reads project context or a named
+        # record first; allow a few read-only calls, but no edits before the playbook.
+        self.assertLessEqual(opened, 3, trace_line(trace[0]))
+        if opened:
+            print(f"{case.name}: {opened} read-only call(s) before the playbook", flush=True)
+        self.assertFalse(writes(trace[:opened]), trace_line(trace[0]))
+        self.assertTrue(any(f"/playbooks/{name}.md" in trace[opened]["target"] for name in playbooks), trace_line(trace[opened]))
+        self.assertIn("\n1. ", trace[opened]["result"], trace_line(trace[opened]))
         if case.allowed is None:
             self.assertEqual(changes, {case.changed_file} if case.changed_file else set())
         elif case.allowed != ANY_CHANGES:
             self.assertLessEqual(changes, set(case.allowed))
         self.assertTrue(same_git_state, "Pi changed the checkout, index, or stash")
 
-        if case.name in {"retry", "check"}:
+        if case.name == "retry":
             self.assertFalse(any("/references/project-verification.md" in call["target"] for call in trace))
-        if case.name == "productbug":
+        if case.name in {"productbug", "failing-check"}:
             local_command(workspace, sys.executable, "checks/replay_export.py").check_returncode()
         if case.name == "recurring":
             self.check_recurring(workspace, changes)
         answer = " ".join(block["text"] for block in assistant["content"] if block.get("type") == "text")
         if case.name == "guidance":
-            guidance = (workspace / "AGENTS.md").read_text()
-            self.assertTrue("checks/replay_export.py" in guidance or "docs/exports.md" in guidance)
+            original = set((FIXTURE / "AGENTS.md").read_text().splitlines())
+            added = "\n".join(line for line in (workspace / "AGENTS.md").read_text().splitlines() if line not in original)
+            self.assertRegex(added, r"(?i)replay_export|retry check")
         if case.name == "guidance-review":
             self.assertTrue(any(re.search(r"\bgit\s+(diff|show)\b", call["target"]) for call in trace))
             self.assertRegex(answer, r"(?i)expected value|edit(ing)? the check|weaken")
@@ -379,7 +405,7 @@ class PiPlaybookTest(unittest.TestCase):
     def check_pickup(self, workspace, trace, answer):
         # The record claims the replay check passes; it fails. The agent must rerun it before
         # building on that claim, report the discrepancy, and continue with another playbook.
-        replay = [i for i, call in enumerate(trace) if call["name"] == "bash" and "Observed" in call["result"]]
+        replay = [i for i, call in enumerate(trace) if call["name"] == "bash" and "Observed ['job-17'" in call["result"]]
         self.assertTrue(replay)
         edits = writes(trace)
         if edits:

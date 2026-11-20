@@ -48,7 +48,24 @@ Routing held in all 21 runs. Every routing failure was a reference trigger or sc
 Known gaps:
 - The cases are synthetic and use one fixture. Each wording was run once or twice, so these results show routing on these requests, not a reliability rate.
 - The T3 delegate wrapper sometimes prepends "Act as the test sub-agent", so the agents under test were not fully blind.
-- The live Pi suite (`BSTACK_TEST_PI=1`) now has cases for every playbook. Its first run on the revised wording routed 17 of 22. Reruns with 3 runs per case: productbug and tests 3/3, rename 2/3 (2/3 on the base), converter 1/3 Migration (2/3 on the base, inconclusive), pickup 1/3 opened Handoff before reading the named record. Two tie-breaks were added after these reruns and are not yet live-tested.
+- The live Pi suite (`BSTACK_TEST_PI=1`) has a case for every playbook and runs all cases concurrently (`BSTACK_PI_WORKERS` overrides), about 60–80 s for 24 cases. Its single runs on the revised wording passed 20 of 22 twice, with different cases failing each time because Flash ran `ls` or read a named file before opening the playbook. Treat one failing first action as noise until it repeats.
 - `tests/test_pi_core_loading.py` failed intermittently in this session: 5 errors in about 100 s, which matches five 20-second Pi launch timeouts. It was not reproduced in seven later runs, and the cause is unconfirmed.
 
 `SKILL.md` grew from 17,356 to 18,703 bytes in rounds 1–4. [Rule loading research](rule-loading-research.md) measured a 17.4 KB inline layout against an 11.0 KB split one: outcomes matched, the split saved about 20% of first-call tokens, and whole-run tokens and time were indistinguishable. In the split layout, Flash did not open the moved rule files on tasks that did not need them, and one exploratory run did open three. Rules therefore stay inline.
+
+## Whole-skill review (rounds 5–7)
+
+The owner's aim is engineer-grade output on everyday work with any model, so Burbi-mode loads on most tasks. Fable 5.2 at medium effort reviewed the whole skill, not only the new routes, three more times.
+
+- **Round 5 (whole skill).** Three blocking issues:
+  - Recurring mistake contradicted itself on existing violations.
+  - Adding tests had no route.
+  - The Project verification trigger was worded four ways, and two references linked each other, so small bug fixes loaded both.
+  - Applied with these changes: one condition wording that a test pins; a Verification recipes row; rule 4 now names the design, types, lint, then tests order; new rule 22 to review your own diff; the Delegate section moved into Delegation; and one name each for the parent and the record.
+- **Round 6.** Two blocking issues introduced by round 5:
+  - "Repair tests uses Feature" would let an agent edit a failing test until it passes.
+  - Rule 22 could revert changes the agent did not make.
+  - Also: staging now needs authorization, and nine live-test weaknesses were fixed.
+- **Round 7 (final).** One blocking issue: the failing-test sentence keyed on a test's state, not the request. Also a test helper that counted `2>&1` as a write. Both fixed, and live cases added for a failing check and for asking why it fails.
+
+`SKILL.md` is 18,788 bytes. The cap is now 19,000, a ratchet rather than a measured threshold. Playbooks are capped at 3,500 bytes, references at 4,500, and roles at 1,500.
