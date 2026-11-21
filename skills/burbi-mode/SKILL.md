@@ -12,6 +12,7 @@ Route by what the user wants done now. For a routed task, the first tool action 
 
 | Requested outcome | Playbook |
 | --- | --- |
+| Pause work so another session can resume it, or resume work from another session that you know only through its record, such as notes, a transcript, or a branch. Open this before the playbook for the remaining work | [Handoff](playbooks/handoff.md) |
 | Explain existing behavior or diagnose a correctness failure | [Investigation](playbooks/investigation.md) |
 | Fix incorrect behavior now. This includes a request to explain, fix, and verify a correctness defect; to fix a failing test whose cause is not yet known; or to fix a defect that keeps recurring in the running product | [Bug fix](playbooks/bug-fix.md) |
 | Plan, add, or intentionally change behavior, add tests for existing behavior, update tests for an intended behavior change, or write or update a verification recipe in the repo | [Feature](playbooks/feature.md) |
@@ -23,7 +24,6 @@ Route by what the user wants done now. For a routed task, the first tool action 
 | Run checks or exercise behavior and report a verdict | [Verification](playbooks/verification.md) |
 | Stop a kind of wrong change that agents or contributors keep making, even when the request names an instruction as the remedy | [Recurring mistake](playbooks/recurring-mistake.md) |
 | Write or revise instructions that agents load, such as a skill, playbook, agent instruction file, or delegate role, or evaluate how agents follow them | [Guidance](playbooks/guidance.md) |
-| Pause work so another session can resume it, or resume work from another session that you know only through its record, such as notes, a transcript, or a branch. Open this before the playbook for the remaining work | [Handoff](playbooks/handoff.md) |
 
 - When a request lists separate tasks or review comments, route each by its own requested outcome. Steps toward one outcome are one task.
 - For a plan-only or design-only request, open the playbook for the underlying change and finish with the plan or design and its evidence.
@@ -42,6 +42,7 @@ After opening any selected playbook, open each reference whose condition applies
 
 | Condition | Reference |
 | --- | --- |
+| The user asks for work that runs unattended or that they will audit afterward, or asks for a decision log. Also open it when work with several dependent steps matches no playbook. | [Long-running work](references/long-running-work.md) |
 | You are about to write or edit a code comment or project documentation, including to correct what a change made inaccurate, or, with edits in scope, you confirm or change a business rule, contract, or operating constraint a future reader will need | [Comments and documentation](references/comments-and-documentation.md) |
 | A check needs a running app, device, or external dependency the usual checks do not exercise, or a needed check is blocked. For work that includes publication or deployment, including a push that triggers either, open it before choosing release checks. | [Project verification](references/project-verification.md) |
 | The task asks to plan, write, or update a verification recipe | [Verification recipes](references/verification-recipes.md) |
@@ -49,7 +50,6 @@ After opening any selected playbook, open each reference whose condition applies
 | The task leaves a shared interface or state ownership decision unresolved and the choice affects dependent callers, Workers, or deployed versions | [Architecture](references/architecture.md) |
 | The user asks to delegate, or you are about to dispatch a subagent. Open it before dispatch. | [Delegation](references/delegation.md) |
 | You coordinate delegated assignments that depend on one another or continue across turns | [Coordination](references/coordination.md) |
-| The user asks for work that runs unattended or that they will audit afterward, or asks for a decision log. Also open it when work with several dependent steps matches no playbook. | [Long-running work](references/long-running-work.md) |
 
 ## Carry the work through
 

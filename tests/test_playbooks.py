@@ -66,6 +66,15 @@ class PlaybookFilesTest(unittest.TestCase):
         files = [str(path.relative_to(SKILL.parent)) for path in SKILL.parent.glob("references/*.md")]
         self.assertCountEqual(targets, files)
 
+    def test_rows_that_apply_across_routes_come_first(self):
+        # In live DeepSeek Flash runs, Handoff lower in its table let Feature open first on a pickup,
+        # and Long-running work lower in its table went unopened on unattended work. See
+        # docs/workflow-organization.md, "Rows that apply across routes come first".
+        text = SKILL.read_text()
+        playbooks = re.findall(r"^\|.*\]\(playbooks/([\w-]+)\.md\) \|$", text, re.M)
+        references = re.findall(r"^\|.*\]\(references/([\w-]+)\.md\) \|$", text, re.M)
+        self.assertEqual((playbooks[0], references[0]), ("handoff", "long-running-work"))
+
     def test_rule_and_step_citations_resolve(self):
         rules = SKILL.read_text().split("## Engineering rules", 1)[1]
         rule_count = len(re.findall(r"^\d+\. ", rules, re.M))

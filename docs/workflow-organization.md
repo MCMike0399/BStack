@@ -85,8 +85,67 @@ Two drafts regressed and were reverted:
 
 A Fable 5.2 Advisor at medium effort reviewed the first draft word by word against the old text. It found one blocking issue, the read-only boundary hidden behind a pointer, which is now fixed. It also found eight non-blocking issues, which were applied except where the runs above reverted them. It left "Find project context" unchanged and needed.
 
-Open gaps:
-- `continue` opens Feature before Handoff in about half the runs on both wordings. The Handoff row's "Open this before the playbook for the remaining work" has not fixed it.
-- `unattended` skips Long-running work in about a quarter of runs on both wordings.
+Two gaps stayed open: `continue` opened Feature before Handoff, and `unattended` skipped Long-running work. The next section records the fix.
 
-Both cases stay in the suite as the checks for any future fix.
+## Rows that apply across routes come first
+
+Two cases kept failing on 2026-11-20, as the previous section records:
+- In `continue` ("Continue the --dry-run work described in HANDOFF.md"), the agent opened Feature before Handoff.
+- In `unattended` ("Work unattended … I will audit your decisions afterward, so log them in DECISIONS.md"), it skipped Long-running work.
+
+Both concerns sit on top of a content route: a pickup wraps whatever work remains, and a decision log wraps whatever work runs unattended. Each was the last row of its table.
+
+**The checker overstated the failures.** Three faults in the live suite's checker made correct runs fail:
+- It recognized a playbook only by an absolute path containing `/playbooks/`. A run that did `cd <skill> && cat playbooks/feature.md` counted as opening no playbook.
+- A run that read Handoff and Feature in one call failed the check for a second playbook after Handoff.
+- It counted any shell command that mentioned `export_worker.py` and redirected output anywhere as an edit of the worker. That included `python3 export_worker.py --dry-run job-17 out > /tmp/log`, so correct runs looked as if they logged decisions after their first edit.
+
+The suite now matches skill files by relative path too, and treats files read in one call as opened together. With these fixes, the original order's `continue` failed 2 of 20 runs, not about half. A shell command now counts as writing a file only when a redirect, `tee`, in-place edit, or copy in it targets that file, or when it names the file and contains a Python write. The checker still counts a scratch copy with the same name, or a probe that names the file and writes elsewhere from Python. These errors can go either way. A scratch copy counted as a worker edit makes the check stricter. A false `DECISIONS.md` write makes it more lenient. A redirect through a shell variable is missed. Python probes and scratch copies were counted as worker edits in the saved traces. Only the `unattended` edit-order check uses this count, and no `unattended` run failed on edit order. No false `DECISIONS.md` write appeared. The `rename` check still fails on any path containing `references/`. The `retry` check fails on `references/project-verification.md` or a glob.
+
+**What other stacks do.** Read on 2026-11-20:
+- PStack's Poteto mode puts its cross-route triggers in a "Non-negotiables" list above its playbooks. One of them is "Long or unattended work → **show-me-your-work**" ([Poteto mode @ d42aff0](https://github.com/cursor/plugins/blob/d42aff08aa58965d2735c4ead61a9af82b89d0d0/pstack/skills/poteto-mode/SKILL.md)). Its pickup playbook routes the remaining work and says "The routed playbook owns the rest" ([Session pickup](https://github.com/cursor/plugins/blob/d42aff08aa58965d2735c4ead61a9af82b89d0d0/pstack/skills/poteto-mode/playbooks/session-pickup.md)).
+- Superpowers says "process skills come first — they set the approach, then implementation skills … carry it out" ([Using Superpowers @ 22f0b46](https://github.com/obra/superpowers/blob/22f0b463e7a5e579904dd6211a520321035526f7/skills/using-superpowers/SKILL.md)).
+- GStack sends a user who asks "to resume, restore, \"where was I\"" to a separate `/context-restore` skill ([GStack @ 507ebfc](https://github.com/garrytan/gstack/blob/507ebfc16df362cc54a7e5842c42fabd8f8c0cfa/SKILL.md)).
+- Matt Pocock writes that a pointer's wording, not its target, decides when the agent reaches the material, and that the wording should be sharpened before the material is inlined ([Writing for agents @ abeeaf9](https://github.com/mattpocock/skills/blob/abeeaf95660ba9e8b7c753eb38f441ca707a8823/skills/productivity/writing-for-agents/SKILL.md)).
+
+These sources shaped the drafts below. None of them addresses row order, and the adopted change follows none of them directly.
+
+**Drafts and live results.** All runs used Pi 1.5.2 and DeepSeek V4.1 Flash with the corrected checker. Every draft moved the Long-running row to the top of the reference table, and the drafts differ only in how they order Handoff. Counts are completed runs. Exploratory batches ran up to three at once.
+
+| Draft | `continue` | `unattended` | Other effects |
+| --- | --- | --- | --- |
+| Original order | 18 of 20. One opened Feature first. One opened Handoff and no second playbook | 5 of 12. Every failure skipped Long-running work | — |
+| Handoff sentence above the table, three wordings | 22 of 22 | 17 of 22. Every failure opened Handoff first | One wording sent one of four `pickup` runs to Feature. One of four on the original order also failed, opening Feature after five read-only calls |
+| Handoff sentence in the list under the table | 15 of 16 | 12 of 12 | — |
+| Long-running row first only | 6 of 8 | 8 of 8 | — |
+| **Handoff row first in the playbook table (adopted)** | **12 of 12** | **3 of 4**. The failure made six read-only calls before its playbook, starting with the Long-running reference | — |
+
+Some of these counts were rescored from saved tool traces, which check routing and edit order only:
+- five of the sentence-above-table `unattended` runs;
+- the six `unattended` runs from the first baseline batch.
+
+Two exploratory batches timed out on most sessions while a single probe passed in about 15 seconds. These were the first run of the Long-running-only draft (20 of 28 sessions) and the first run of the adopted order (16 of 28). Both were rerun with fewer concurrent sessions. Twelve sessions completed in the adopted order's timed-out batch. Eleven passed, and one `batch` run skipped the Feature playbook. Their traces were lost, so the table leaves them out.
+
+**The decisive comparison.** The comparison held everything fixed except the Handoff row's position: the Long-running-only draft against the adopted order. Each ran `continue` in three alternating, non-concurrent batches of eight. The rule, fixed before the runs: call Handoff-first better only if it failed at most once in 24 and the other order failed at least five times. No session timed out.
+- **Handoff in its original position:** 8 of 24 failed, three, two, and three by batch.
+  - Six opened Feature first, two of them after four read-only calls.
+  - One made four read-only calls, then opened Handoff and Feature together.
+  - One opened Handoff and no second playbook.
+- **Handoff first:** 1 of 24 failed, in the second batch. Feature never came first. The one failure opened Handoff and then no playbook for the remaining work. One run of the original order and one of the Long-running-only draft did the same.
+
+With the corrected checker, the original order opened Feature first in only 1 of 20 runs. The Long-running-only draft did so in 8 of 32. Those drafts were not alternated, so these runs cannot show whether moving the Long-running row made Feature-first more likely. Either way, the adopted order did best: `continue` passed 35 of 36 traced runs.
+
+**Long-running work** was opened before the first edit in all 50 traced `unattended` runs on the reordered drafts. The Long-running-only draft differs from the original order by that row's position alone, and it moved the count from 5 of 12 to 8 of 8. That fixes the skipped reference. Four runs opened it before any playbook, which the skill does not ask for. One of them then went over the three-call limit and failed. The `unattended` case can still fail in other ways, such as reading too many files before the playbook.
+
+**Side effects of the adopted order.**
+- One later batch passed `unattended`, `pickup`, and `pause` in 12 of 12 runs.
+- `batch` passed 11 of 15 completed runs on the adopted order, counting both full-suite runs, and 3 of 4 on the original. Every failure skipped the Feature playbook. The original sample is too small to compare.
+- The full live suite ran twice on the adopted order.
+  - The first run passed 24 of 26: `preview` and `check` made four and six read-only calls before opening a playbook, and four more runs of each passed on both orders. While it ran, `SKILL.md` was stashed to the original order for under a second.
+  - The second run used the final checker with nothing touching the tree. It passed 25 of 26, and its `batch` run skipped Feature.
+
+**Why the sentence above the table was dropped.** It gave a clean `continue` result, but it drew `unattended` into Handoff. "Work unattended… I will audit your decisions afterward" read as a pause.
+
+The adopted change moves the two rows to the top of their tables and changes no words. `SKILL.md` stays 16,953 bytes. A structural test keeps both rows first, because moving either one back down brought back its failure in these runs. Reorder these tables only with live runs.
+
+`BSTACK_PI_CASES`, `BSTACK_PI_REPEAT`, and `BSTACK_PI_SKILL` run selected cases repeatedly against a copy of the skill. The `continue` and `unattended` checks stay in the suite.

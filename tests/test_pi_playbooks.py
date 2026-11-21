@@ -271,14 +271,39 @@ SHELL_WRITE = (
 )
 
 
+def shell_writes(command, path):
+    """Whether a shell command writes path, or writes any file when path is empty."""
+    if not path:
+        return bool(re.search(SHELL_WRITE, command))
+    name = re.escape(path)
+    target = rf"['\"]?[^\s'\";|&<>]*{name}"
+    return bool(re.search(
+        rf"(?<![0-9&])>>?\s*{target}|\b(tee|sed\s+-i|perl\s+-pi)\b[^|;&\n]*{name}"
+        rf"|\b(cp|mv)\b[^|;&\n]*\s{target}['\"]?\s*(?:$|[|;&\n])",
+        command,
+    ) or (path in command and re.search(r"write_text|open\([^)]*['\"][wa]", command)))
+
+
 def writes(trace, path=""):
-    """Indexes of calls that write path, through the edit tools or a shell redirect."""
+    """Indexes of calls that write path (any file when path is empty), through the edit tools or a shell
+    command. A command that only runs or redirects output elsewhere, such as `python3 export_worker.py
+    job-17 out.txt > log`, does not count as writing export_worker.py."""
     return [
         i for i, call in enumerate(trace)
         if path in call["target"] and (
-            call["name"] in {"edit", "write"}
-            or (call["name"] == "bash" and re.search(SHELL_WRITE, call["target"]))
+            call["name"] in {"edit", "write"} or (call["name"] == "bash" and shell_writes(call["target"], path))
         )
+    ]
+
+
+def skill_files(trace, folder):
+    """(call index, name) for each skill playbook or reference the calls open, in the order opened.
+
+    Matches relative paths too, as in `cd <skill> && cat playbooks/feature.md`."""
+    names = {path.stem for path in (SKILL.parent / folder).glob("*.md")}
+    return [
+        (i, name) for i, call in enumerate(trace)
+        for name in re.findall(rf"\b{folder}/([\w-]+)\.md", call["target"]) if name in names
     ]
 
 
@@ -290,9 +315,18 @@ def trace_line(call):
 class PiPlaybookTest(unittest.TestCase):
     def test_routes_and_observable_results(self):
         key = deepseek_key()
+        # BSTACK_PI_CASES=continue,unattended runs only the named cases, BSTACK_PI_REPEAT=4 runs each
+        # selected case that many times, to measure run-to-run spread, and BSTACK_PI_SKILL=<copy>/SKILL.md
+        # runs a copy of the skill, such as an earlier wording. Set BSTACK_PI_WORKERS with a repeat: by
+        # default every session starts at once, and large batches then time out.
+        skill = Path(os.environ.get("BSTACK_PI_SKILL", SKILL))
+        names = set(filter(None, os.environ.get("BSTACK_PI_CASES", "").split(",")))
+        self.assertLessEqual(names, {case.name for case in CASES})
+        selected = [case for case in CASES if not names or case.name in names]
+        cases = selected * int(os.environ.get("BSTACK_PI_REPEAT", 1))
         with TemporaryDirectory(prefix="exports-") as scratch:
             root = Path(scratch)
-            for index, case in enumerate(CASES):
+            for index, case in enumerate(cases):
                 prepare_case(root / str(index), case)
 
             def execute(item):
@@ -301,16 +335,18 @@ class PiPlaybookTest(unittest.TestCase):
                 before = project_files(workspace)
                 before_git = git_state(workspace)
                 with TemporaryDirectory(prefix="pi-", dir=root) as runtime:
-                    messages = messages_from(run_pi(workspace, Path(runtime), key, case.prompt, timeout=case.timeout))
+                    messages = messages_from(run_pi(
+                        workspace, Path(runtime), key, case.prompt, skill=skill, timeout=case.timeout,
+                    ))
                 after = project_files(workspace)
                 changes = {path for path in before.keys() | after.keys() if before.get(path) != after.get(path)}
                 return workspace, case, messages, changes, git_state(workspace) == before_git
 
             # Each case is an independent DeepSeek session, so run them all at once by default.
-            workers = int(os.environ.get("BSTACK_PI_WORKERS", len(CASES)))
+            workers = int(os.environ.get("BSTACK_PI_WORKERS", len(cases)))
             with ThreadPoolExecutor(max_workers=workers) as pool:
-                runs = [pool.submit(execute, item) for item in enumerate(CASES)]
-                for case, run in zip(CASES, runs):
+                runs = [pool.submit(execute, item) for item in enumerate(cases)]
+                for case, run in zip(cases, runs):
                     with self.subTest(case=case.name):
                         self.check_case(*run.result())
 
@@ -322,14 +358,18 @@ class PiPlaybookTest(unittest.TestCase):
         self.assertTrue(trace)
         self.assertFalse(trace[0]["error"], trace_line(trace[0]))
         playbooks = (case.playbook,) if isinstance(case.playbook, str) else case.playbook
-        opened = next(i for i, call in enumerate(trace) if "/playbooks/" in call["target"])
+        books = skill_files(trace, "playbooks")
+        self.assertTrue(books, "no playbook opened")
+        opened = books[0][0]
+        # Playbooks read in the same call count as opened together.
+        first = {name for i, name in books if i == opened}
         # The skill asks for the playbook first. Flash sometimes reads project context or a named
         # record first; allow a few read-only calls, but no edits before the playbook.
         self.assertLessEqual(opened, 3, trace_line(trace[0]))
         if opened:
             print(f"{case.name}: {opened} read-only call(s) before the playbook", flush=True)
         self.assertFalse(writes(trace[:opened]), trace_line(trace[0]))
-        self.assertTrue(any(f"/playbooks/{name}.md" in trace[opened]["target"] for name in playbooks), trace_line(trace[opened]))
+        self.assertTrue(first & set(playbooks), trace_line(trace[opened]))
         self.assertIn("\n1. ", trace[opened]["result"], trace_line(trace[opened]))
         if case.allowed is None:
             self.assertEqual(changes, {case.changed_file} if case.changed_file else set())
@@ -338,7 +378,7 @@ class PiPlaybookTest(unittest.TestCase):
         self.assertTrue(same_git_state, "Pi changed the checkout, index, or stash")
 
         if case.name == "retry":
-            self.assertFalse(any("/references/project-verification.md" in call["target"] for call in trace))
+            self.assertFalse(any(re.search(r"\breferences/(project-verification\.md|\*)", call["target"]) for call in trace))
         if case.name in {"productbug", "failing-check"}:
             local_command(workspace, sys.executable, "checks/replay_export.py").check_returncode()
         if case.name == "recurring":
@@ -361,12 +401,11 @@ class PiPlaybookTest(unittest.TestCase):
             self.check_order_test(workspace)
         if case.name == "batch":
             # Each task is routed by its own outcome.
-            for name in ("bug-fix", "feature"):
-                self.assertTrue(any(f"/playbooks/{name}.md" in call["target"] for call in trace), name)
+            self.assertLessEqual({"bug-fix", "feature"}, {name for _, name in books})
             local_command(workspace, sys.executable, "checks/replay_export.py").check_returncode()
             self.check_order_test(workspace)
         if case.name == "rename":
-            self.assertFalse(any("/references/" in call["target"] for call in trace))
+            self.assertFalse(any(re.search(r"\breferences/", call["target"]) for call in trace))
             code = (workspace / "export_worker.py").read_text()
             self.assertIn("out_file", code)
             self.assertNotRegex(code, r"\bstream\b")
@@ -394,7 +433,7 @@ class PiPlaybookTest(unittest.TestCase):
         if case.name == "check":
             self.assertTrue(any("checks/replay_export.py" in call["target"] and "['job-17', 'job-17']" in call["result"] for call in trace))
         unrelated = any("docs/billing.md" in call["target"] for call in trace)
-        references = sorted({name for call in trace for name in re.findall(r"/references/([\w-]+)\.md", call["target"])})
+        references = sorted({name for _, name in skill_files(trace, "references")})
         print(f"{case.name}: {case.playbook}; references={references}; unrelated topic referenced={unrelated}; {answer[:200]}", flush=True)
 
     def check_preview(self, workspace):
@@ -430,17 +469,16 @@ class PiPlaybookTest(unittest.TestCase):
         edits = writes(trace)
         if edits:
             self.assertLess(replay[0], edits[0])
-        self.assertTrue(any(
-            "/playbooks/" in call["target"] and "/playbooks/handoff.md" not in call["target"] for call in trace[1:]
-        ))
+        books = skill_files(trace, "playbooks")
+        handoff = next(i for i, name in books if name == "handoff")
+        # Another playbook for the remaining work, in the same call as Handoff or later.
+        self.assertTrue({name for i, name in books if i >= handoff} - {"handoff"}, books)
         self.assertRegex(answer, r"(?i)replay|duplicate")
         self.check_preview(workspace)
 
     def check_pause(self, workspace, trace):
         # A pause records the checkpoint and starts no new step.
-        self.assertFalse(any(
-            "/playbooks/" in call["target"] and "/playbooks/handoff.md" not in call["target"] for call in trace
-        ))
+        self.assertEqual({name for _, name in skill_files(trace, "playbooks")}, {"handoff"})
         record = (workspace / "PAUSE.md").read_text()
         head = local_command(workspace, "git", "rev-parse", "HEAD").stdout.strip()
         self.assertIn(head[:7], record)
@@ -448,7 +486,7 @@ class PiPlaybookTest(unittest.TestCase):
             self.assertIn("export_worker.py", record)
 
     def check_unattended(self, workspace, trace):
-        reference = [i for i, call in enumerate(trace) if "/references/long-running-work.md" in call["target"]]
+        reference = [i for i, name in skill_files(trace, "references") if name == "long-running-work"]
         log = writes(trace, "DECISIONS.md")
         worker = writes(trace, "export_worker.py")
         self.assertTrue(reference and log and worker)
